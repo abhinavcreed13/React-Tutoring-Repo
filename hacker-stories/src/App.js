@@ -14,44 +14,51 @@ function getTitle(title) {
 }
 
 // List Component
-const List = (props) => {
-    // return? -> JSX
-    return (
-      props.data.map(item => (
-                <div key={item.objectID}>
-                  <span>
-                    <a href={item.url}>{item.title}</a>
-                  </span>
-                  <span>{item.title}</span>
-                  <span>{item.num_comments}</span>
-                  <span>{item.points}</span>
-                </div>
-            ))
-    );
-}
+// return? -> JSX
+const List = ({ data }) => (
+        data.map(item => <Item key={item.objectID} 
+                                // title={item.title}
+                                // url = {item.url}
+                                // author = {item.author}
+                                // num_comments = {item.num_comments}
+                                // points = {item.points}
+                                {...item}
+                                />
+                        )
+);
+// Item component
+// returns JSX
+// const {pet: {name}} = user
+const Item = ({  title, url, author, num_comments }) => (
+                  <div>
+                        <span>
+                          <a href={url}>{title}</a>
+                        </span>
+                        <span>{author}</span>
+                        <span>{num_comments}</span>
+                        {/* <span>{points}</span> */}
+                      </div>
+      );
 
 // Just -> Function
 // return JSX
-const Search = (props) => {
+const Search = ({ searchTerm, onSearch }) => {
+
+  // object destructing
+  // const { searchTerm, onSearch } = props;
+
   return (
       <div>
         <label htmlFor="search">Search: </label>
-        <input id="search" type="text" onChange={props.onSearch}/>
+        <input id="search" type="text" 
+          value={searchTerm}
+          onChange={onSearch}/>
       </div>
   );
 }
 
 // Functional component
 const App = () => {
-
-  // array destructuring
-  // useState React hook
-  const [searchTerm, setSearchTerm] = React.useState(''); 
-
-  // callback handler
-  const handleSearch = event => {
-    setSearchTerm(event.target.value);
-  };  
 
   // stories
   // javascript list/array
@@ -73,6 +80,20 @@ const App = () => {
       objectID: 1
     },
   ]
+  // array destructuring
+  // useState React hook
+  const [searchTerm, setSearchTerm] = React.useState(''); 
+
+  // callback handler
+  const handleSearch = event => {
+    // this will re-render App component
+    // App() is fired again
+    setSearchTerm(event.target.value);
+  };  
+
+  const searchStories = stories.filter(function(story){
+    return story.title.toLowerCase().includes(searchTerm.toLowerCase());
+  });
 
   return (
     // React JSX -> babel -> React.functions -> HTML
@@ -81,13 +102,13 @@ const App = () => {
         My Hacker Stories
       </h1>
       
-      <Search onSearch={handleSearch}/>
+      <Search searchTerm={searchTerm} onSearch={handleSearch}/>
       <p>
           Searching for <strong>{searchTerm}</strong>
       </p>
       <hr />
 
-      <List data={stories}/>
+      <List data={searchStories}/>
     </div>
   );
 }
