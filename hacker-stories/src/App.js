@@ -15,20 +15,16 @@ function getTitle(title) {
 
 // List Component
 // return? -> JSX
+/*
 const List = ({ data }) => (
-        data.map(item => <Item key={item.objectID} 
-                                // title={item.title}
-                                // url = {item.url}
-                                // author = {item.author}
-                                // num_comments = {item.num_comments}
-                                // points = {item.points}
-                                {...item}
-                                />
-                        )
+        data.map(({objectID, ...item}) => <Item key={objectID} {...item}/>
+      )
 );
+*/
 // Item component
 // returns JSX
 // const {pet: {name}} = user
+/*
 const Item = ({  title, url, author, num_comments }) => (
                   <div>
                         <span>
@@ -36,9 +32,24 @@ const Item = ({  title, url, author, num_comments }) => (
                         </span>
                         <span>{author}</span>
                         <span>{num_comments}</span>
-                        {/* <span>{points}</span> */}
+                        <span>{points}</span>
                       </div>
       );
+*/
+
+const List = ({ data }) =>
+  data.map(item => <Item key={item.objectID} item={item} />);
+
+const Item = ({ item }) => (
+  <div>
+    <span>
+        <a href={item.url}>{item.title}</a>
+      </span>
+      <span>{item.author}</span>
+      <span>{item.num_comments}</span>
+      <span>{item.points}</span>
+  </div>
+);
 
 // Just -> Function
 // return JSX
@@ -55,6 +66,24 @@ const Search = ({ searchTerm, onSearch }) => {
           onChange={onSearch}/>
       </div>
   );
+}
+
+// For this thing to be called hook
+// return array -> with item and setItem
+const useSemiPersistentState = () => {
+  // array destructuring
+  // useState React hook
+  const [searchTerm, setSearchTerm] = React.useState(
+    localStorage.getItem('search') || 'React'
+  ); 
+
+  // useEffect React hook
+  React.useEffect(() => {
+    // this is sync I need to do when state is changed
+    localStorage.setItem('search', searchTerm);
+  }, [searchTerm]);
+
+  return [searchTerm, setSearchTerm];
 }
 
 // Functional component
@@ -80,16 +109,15 @@ const App = () => {
       objectID: 1
     },
   ]
-  // array destructuring
-  // useState React hook
-  const [searchTerm, setSearchTerm] = React.useState(''); 
+
+  const [searchTerm, setSearchTerm] = useSemiPersistentState();
 
   // callback handler
   const handleSearch = event => {
     // this will re-render App component
     // App() is fired again
     setSearchTerm(event.target.value);
-  };  
+  }; 
 
   const searchStories = stories.filter(function(story){
     return story.title.toLowerCase().includes(searchTerm.toLowerCase());
