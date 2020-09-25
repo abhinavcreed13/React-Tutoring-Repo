@@ -37,80 +37,127 @@ const Item = ({  title, url, author, num_comments }) => (
       );
 */
 
-const List = ({ data }) =>
-  data.map(item => <Item key={item.objectID} item={item} />);
+const List = ({ data, onRemoveItem }) =>
+  data.map(item => 
+      <Item 
+        key={item.objectID} 
+        item={item} 
+        onRemoveItem = {onRemoveItem}
+        />);
 
-const Item = ({ item }) => (
-  <div>
-    <span>
-        <a href={item.url}>{item.title}</a>
-      </span>
-      <span>{item.author}</span>
-      <span>{item.num_comments}</span>
-      <span>{item.points}</span>
-  </div>
-);
+const Item = ({ item, onRemoveItem }) => {
+  const handleRemoveItem = () => {
+    onRemoveItem(item);
+  }
+  return(
+      <div>
+        <span>
+            <a href={item.url}>{item.title}</a>
+          </span>
+          <span>{item.author}</span>
+          <span>{item.num_comments}</span>
+          <span>{item.points}</span>
+          <span>
+            <button type="button" onClick={handleRemoveItem}>Dismiss</button>
+          </span>
+      </div>
+  );
+};
 
 // Just -> Function
 // return JSX
 const Search = ({ searchTerm, onSearch }) => {
+  return (
+          <>
+            <label>Search: </label>
+            <input id="search" type="text" 
+            value={searchTerm}
+            onChange={onSearch}/>
+          </>
+  );
+}
+// Reusable component
+const InputWithLabel = ({ id, value, 
+  type='text', onInputChange, 
+  children,
+  isFocused }) => {
 
-  // object destructing
-  // const { searchTerm, onSearch } = props;
+  const inputRef = React.useRef();
+
+  React.useEffect(() => {
+    if(isFocused && inputRef.current){
+      // telling react how to focus
+      inputRef.current.focus();
+    }
+  }, [isFocused]);
 
   return (
-      <div>
-        <label htmlFor="search">Search: </label>
-        <input id="search" type="text" 
-          value={searchTerm}
-          onChange={onSearch}/>
-      </div>
+          <>
+            <label>{children}</label>
+            &nbsp;
+            <input id={id}
+            ref={inputRef} 
+            //autoFocus
+            type={type} 
+            value={value}
+            onChange={onInputChange}/>
+          </>
   );
 }
 
+const initialStories = [
+  {
+    title: 'React',
+    url : 'https://reactjs.org/',
+    author: 'Jordan Walke',
+    num_comments: 3,
+    points: 4,
+    objectID: 0
+  },
+  {
+    title: 'Redux',
+    url : 'https://redux.js.org/',
+    author: 'Dan Abramov',
+    num_comments: 2,
+    points: 5,
+    objectID: 1
+  },
+]
+
 // For this thing to be called hook
 // return array -> with item and setItem
-const useSemiPersistentState = () => {
+const useSemiPersistentState = (key, initialState) => {
   // array destructuring
   // useState React hook
-  const [searchTerm, setSearchTerm] = React.useState(
-    localStorage.getItem('search') || 'React'
+  const [value, setValue] = React.useState(
+    localStorage.getItem(key) || initialState
   ); 
 
   // useEffect React hook
   React.useEffect(() => {
     // this is sync I need to do when state is changed
-    localStorage.setItem('search', searchTerm);
-  }, [searchTerm]);
+    localStorage.setItem(key, value);
+  }, [value, key]);
 
-  return [searchTerm, setSearchTerm];
+  return [value, setValue];
 }
 
 // Functional component
 const App = () => {
 
-  // stories
-  // javascript list/array
-  const stories = [
-    {
-      title: 'React',
-      url : 'https://reactjs.org/',
-      author: 'Jordan Walke',
-      num_comments: 3,
-      points: 4,
-      objectID: 0
-    },
-    {
-      title: 'Redux',
-      url : 'https://redux.js.org/',
-      author: 'Dan Abramov',
-      num_comments: 2,
-      points: 5,
-      objectID: 1
-    },
-  ]
+  const [searchTerm, setSearchTerm] = useSemiPersistentState('search', 'React');
 
-  const [searchTerm, setSearchTerm] = useSemiPersistentState();
+  const [stories, setStories] = React.useState(initialStories);
+
+  const handleRemoveStory = item => {
+    // skipping item.objectID
+    const newStories = stories.filter(
+      story => item.objectID !== story.objectID
+    );
+    setStories(newStories);
+  }
+
+  let isFocused = true
 
   // callback handler
   const handleSearch = event => {
@@ -126,17 +173,23 @@ const App = () => {
   return (
     // React JSX -> babel -> React.functions -> HTML
     <div className="App">
-      <h1>
-        My Hacker Stories
-      </h1>
+      <h1>My Hacker Stories</h1>
       
-      <Search searchTerm={searchTerm} onSearch={handleSearch}/>
+      {/* <Search searchTerm={searchTerm} onSearch={handleSearch}/> */}
+      <InputWithLabel
+          id = "search"
+          value = {searchTerm}
+          onInputChange = {handleSearch}
+          isFocused = {false}
+          >
+            <strong>Search:</strong>
+        </InputWithLabel>
       <p>
           Searching for <strong>{searchTerm}</strong>
       </p>
       <hr />
 
-      <List data={searchStories}/>
+      <List data={searchStories} onRemoveItem={handleRemoveStory}/>
     </div>
   );
 }
