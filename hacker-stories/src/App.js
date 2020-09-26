@@ -46,9 +46,9 @@ const List = ({ data, onRemoveItem }) =>
         />);
 
 const Item = ({ item, onRemoveItem }) => {
-  const handleRemoveItem = () => {
-    onRemoveItem(item);
-  }
+  // const handleRemoveItem = () => {
+  //   onRemoveItem(item);
+  // }
   return(
       <div>
         <span>
@@ -58,7 +58,7 @@ const Item = ({ item, onRemoveItem }) => {
           <span>{item.num_comments}</span>
           <span>{item.points}</span>
           <span>
-            <button type="button" onClick={handleRemoveItem}>Dismiss</button>
+            <button type="button" onClick={() => onRemoveItem(item)}>Dismiss</button>
           </span>
       </div>
   );
@@ -124,6 +124,17 @@ const initialStories = [
   },
 ]
 
+// IMAGINE: this is coming from another machine
+// data takes 2 second to come
+const getAsyncStories = () =>
+  //Promise.resolve({data: {stories: initialStories }});
+  new Promise(resolve => 
+      setTimeout(
+        () => resolve({data: {stories: initialStories}}),
+        2000
+      )
+);
+
 // For this thing to be called hook
 // return array -> with item and setItem
 const useSemiPersistentState = (key, initialState) => {
@@ -145,9 +156,23 @@ const useSemiPersistentState = (key, initialState) => {
 // Functional component
 const App = () => {
 
-  const [searchTerm, setSearchTerm] = useSemiPersistentState('search', 'React');
+  const [searchTerm, setSearchTerm] = useSemiPersistentState('search2', '');
 
-  const [stories, setStories] = React.useState(initialStories);
+  const [stories, setStories] = React.useState([]);
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [isError, setIsError] = React.useState(false);
+
+  // Tell react - run this only ONCE!!!
+  React.useEffect(()=> {
+    setIsLoading(true);
+    // do a ASYNC call and set my stories
+    getAsyncStories()
+      .then(result => {
+          setStories(result.data.stories);
+          setIsLoading(false);
+        })
+      .catch(() => setIsError(true));
+  }, []);
 
   const handleRemoveStory = item => {
     // skipping item.objectID
@@ -156,8 +181,6 @@ const App = () => {
     );
     setStories(newStories);
   }
-
-  let isFocused = true
 
   // callback handler
   const handleSearch = event => {
@@ -188,8 +211,13 @@ const App = () => {
           Searching for <strong>{searchTerm}</strong>
       </p>
       <hr />
+      { isError && <p>Something went wrong...</p> }
 
-      <List data={searchStories} onRemoveItem={handleRemoveStory}/>
+      { isLoading ? (<p>Loading...</p>) :
+          (<List data={searchStories} onRemoveItem={handleRemoveStory}/>)
+      }
+      {/* { isVisible ? 'Hide' : 'Show'}
+      <button onClick={() => setIsVisible(!isVisible)}>Toggle</button> */}
     </div>
   );
 }
