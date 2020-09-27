@@ -128,12 +128,12 @@ const initialStories = [
 // data takes 2 second to come
 const getAsyncStories = () =>
   //Promise.resolve({data: {stories: initialStories }});
-  new Promise(resolve => 
-      setTimeout(
-        () => resolve({data: {stories: initialStories}}),
-        2000
-      )
-);
+  // new Promise(resolve => 
+  //     setTimeout(
+  //       () => resolve({data: {stories: initialStories}}),
+  //       2000
+  //     )
+  new Promise((resolve, reject) => setTimeout(reject, 2000));
 
 // For this thing to be called hook
 // return array -> with item and setItem
@@ -153,33 +153,91 @@ const useSemiPersistentState = (key, initialState) => {
   return [value, setValue];
 }
 
+// it always have previous state and action
+// always returns a new state
+// <REDUX> - React state management 
+const storiesReducer = (state, action) => {
+   switch(action.type){
+      case 'STORIES_FETCH_INIT':
+        return {
+          ...state,
+          isLoading: true,
+          isError: false
+        };
+      case 'STORIES_FETCH_SUCCESS':
+        return {
+          ...state,
+          isLoading: false,
+          isError: false,
+          data: action.payload
+        }
+      case 'STORIES_FETCH_FAILURE':
+        return {
+          ...state,
+          isLoading: false,
+          isError: true
+        };
+      case 'REMOVE_STORY':
+        return {
+          ...state,
+          data: state.filter(
+          story => action.payload.objectID !== story.objectID
+          )
+        };
+      default:
+        throw new Error();
+   }
+}
+
+const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query="
+
 // Functional component
 const App = () => {
 
   const [searchTerm, setSearchTerm] = useSemiPersistentState('search2', '');
 
-  const [stories, setStories] = React.useState([]);
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
+  // Complex state
+  const [stories, dispatchStories] = React.useReducer(
+    storiesReducer,
+    {data: [], isLoading: false, isError: false }
+  );
+  // const [stories, setStories] = React.useState([]);
+  // const [isLoading, setIsLoading] = React.useState(false);
+  // const [isError, setIsError] = React.useState(false);
 
   // Tell react - run this only ONCE!!!
   React.useEffect(()=> {
-    setIsLoading(true);
+    // setIsLoading(true);
+    dispatchStories({ type: 'STORIES_FETCH_INIT'});
+
     // do a ASYNC call and set my stories
-    getAsyncStories()
+    fetch(`${API_ENDPOINT}react`)
+      .then(response => response.json())
       .then(result => {
-          setStories(result.data.stories);
-          setIsLoading(false);
+          // setStories(result.data.stories);
+          dispatchStories({
+            type: 'STORIES_FETCH_SUCCESS',
+            payload: result.hits
+          });
+          // setIsLoading(false);
         })
-      .catch(() => setIsError(true));
+      .catch(() => dispatchStories({ type: 'STORIES_FETCH_FAILURE'}));
   }, []);
 
   const handleRemoveStory = item => {
     // skipping item.objectID
-    const newStories = stories.filter(
-      story => item.objectID !== story.objectID
-    );
-    setStories(newStories);
+    // const newStories = stories.filter(
+    //   story => item.objectID !== story.objectID
+    // );
+    // // setStories(newStories);
+    // dispatchStories({
+    //   type: 'SET_STORIES',
+    //   payload: newStories
+    // });
+    dispatchStories({
+      type: 'REMOVE_STORY',
+      payload: item
+    });
   }
 
   // callback handler
@@ -189,7 +247,7 @@ const App = () => {
     setSearchTerm(event.target.value);
   }; 
 
-  const searchStories = stories.filter(function(story){
+  const searchStories = stories.data.filter(function(story){
     return story.title.toLowerCase().includes(searchTerm.toLowerCase());
   });
 
@@ -211,9 +269,9 @@ const App = () => {
           Searching for <strong>{searchTerm}</strong>
       </p>
       <hr />
-      { isError && <p>Something went wrong...</p> }
+      { stories.isError && <p>Something went wrong...</p> }
 
-      { isLoading ? (<p>Loading...</p>) :
+      { stories.isLoading ? (<p>Loading...</p>) :
           (<List data={searchStories} onRemoveItem={handleRemoveStory}/>)
       }
       {/* { isVisible ? 'Hide' : 'Show'}
