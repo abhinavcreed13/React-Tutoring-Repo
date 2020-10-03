@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css';
+import axios from 'axios';
 
 // Javascript object
 const welcome = {
@@ -194,7 +195,30 @@ const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query="
 // Functional component
 const App = () => {
 
-  const [searchTerm, setSearchTerm] = useSemiPersistentState('search2', '');
+  const [searchTerm, setSearchTerm] = useSemiPersistentState('search2', 'React');
+
+  const [url, setUrl] = React.useState(
+    `${API_ENDPOINT}${searchTerm}`
+  );
+
+  // callback hook function
+  // memoized handler in react
+  const handleFetchStories = React.useCallback(async () => {
+    // setIsLoading(true);
+    dispatchStories({ type: 'STORIES_FETCH_INIT'});
+    try
+    {
+      // do a ASYNC call and set my stories
+      // you can only await the <promise> object
+      const result = await axios.get(url);
+      dispatchStories({
+        type: 'STORIES_FETCH_SUCCESS',
+        payload: result.data.hits
+      });
+    } catch {
+      dispatchStories({ type: 'STORIES_FETCH_FAILURE'})
+    }
+  }, [url]);
 
   // Complex state
   const [stories, dispatchStories] = React.useReducer(
@@ -205,24 +229,10 @@ const App = () => {
   // const [isLoading, setIsLoading] = React.useState(false);
   // const [isError, setIsError] = React.useState(false);
 
-  // Tell react - run this only ONCE!!!
+  // It will fire when searchTerm is changed
   React.useEffect(()=> {
-    // setIsLoading(true);
-    dispatchStories({ type: 'STORIES_FETCH_INIT'});
-
-    // do a ASYNC call and set my stories
-    fetch(`${API_ENDPOINT}react`)
-      .then(response => response.json())
-      .then(result => {
-          // setStories(result.data.stories);
-          dispatchStories({
-            type: 'STORIES_FETCH_SUCCESS',
-            payload: result.hits
-          });
-          // setIsLoading(false);
-        })
-      .catch(() => dispatchStories({ type: 'STORIES_FETCH_FAILURE'}));
-  }, []);
+    handleFetchStories();
+  }, [handleFetchStories]);
 
   const handleRemoveStory = item => {
     // skipping item.objectID
@@ -247,9 +257,13 @@ const App = () => {
     setSearchTerm(event.target.value);
   }; 
 
-  const searchStories = stories.data.filter(function(story){
-    return story.title.toLowerCase().includes(searchTerm.toLowerCase());
-  });
+  // const searchStories = stories.data.filter(function(story){
+  //   return story.title.toLowerCase().includes(searchTerm.toLowerCase());
+  // });
+
+  const handleSearchSubmit = () => {
+    setUrl(`${API_ENDPOINT}${searchTerm}`);
+  }
 
   return (
     // React JSX -> babel -> React.functions -> HTML
@@ -265,6 +279,10 @@ const App = () => {
           >
             <strong>Search:</strong>
         </InputWithLabel>
+        <button
+          type="button"
+          disabled={!searchTerm}
+          onClick={handleSearchSubmit}>Submit</button>
       <p>
           Searching for <strong>{searchTerm}</strong>
       </p>
@@ -272,7 +290,7 @@ const App = () => {
       { stories.isError && <p>Something went wrong...</p> }
 
       { stories.isLoading ? (<p>Loading...</p>) :
-          (<List data={searchStories} onRemoveItem={handleRemoveStory}/>)
+          (<List data={stories.data} onRemoveItem={handleRemoveStory}/>)
       }
       {/* { isVisible ? 'Hide' : 'Show'}
       <button onClick={() => setIsVisible(!isVisible)}>Toggle</button> */}
