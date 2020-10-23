@@ -265,6 +265,19 @@ const App = () => {
     setUrl(`${API_ENDPOINT}${searchTerm}`);
   }
 
+  const getSearchStories = () => {
+    newStories = []
+    stories.forEach(function(item){
+      if (item.title.toLowerCase().includes(searchTerm.toLowerCase())){
+        newStories.push(item)
+      }
+    })
+  }
+
+  const searchStories = stories.filter(function(story){
+    return story.title.toLowerCase().includes(searchTerm.toLowerCase());
+  });
+
   return (
     // React JSX -> babel -> React.functions -> HTML
     <div className="App">
