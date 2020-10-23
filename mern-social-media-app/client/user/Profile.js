@@ -59,6 +59,10 @@ export default function Profile({ match }) {
     };
   }, [match.params.userId]);
 
+  const photoUrl = user._id
+              ? `/api/users/photo/${user._id}?${new Date().getTime()}`
+              : '/api/users/defaultphoto'
+
   if (redirectToSignin) {
     return <Redirect to="/signin" />;
   }
@@ -70,9 +74,7 @@ export default function Profile({ match }) {
       <List dense>
         <ListItem>
           <ListItemAvatar>
-            <Avatar>
-              <Person />
-            </Avatar>
+            <Avatar src={photoUrl} className={classes.bigAvatar}/>
           </ListItemAvatar>
           <ListItemText primary={user.name} secondary={user.email} />{" "}
           {auth.isAuthenticated().user &&
@@ -89,9 +91,8 @@ export default function Profile({ match }) {
         </ListItem>
         <Divider />
         <ListItem>
-          <ListItemText
-            primary={"Joined: " + new Date(user.created).toDateString()}
-          />
+          <ListItemText primary={user.about} secondary={"Joined: " + (
+              new Date(user.created)).toDateString()}/>
         </ListItem>
       </List>
     </Paper>
